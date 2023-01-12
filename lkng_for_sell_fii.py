@@ -23,9 +23,9 @@ Desde a data {}(Mês-Dia-Ano) até agr
 """
 print(msg_aval_since.format(data_inicial))
 
-empresas_df = pd.read_excel("../../../../financas/investimentos/carteira/participacao.xlsx", sheet_name= 'fiis')
+empresas_df = ('BNFS11', 'BBPO11')  # FIIs na carteira
 
-for empresa in empresas_df['Código']:
+for empresa in empresas_df:
     df = web.DataReader(f'{empresa}.SA', data_source='yahoo', start=data_inicial, end=data_final)
 
     var = ((df["Adj Close"][len(df["Adj Close"])-1]) - min(df["Adj Close"]))/min(df["Adj Close"])
