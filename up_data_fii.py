@@ -8,7 +8,7 @@ from selenium import webdriver
 from bs4 import BeautifulSoup
 
 one_day = 60*60*24
-
+now = datetime.datetime.now()
 def natozero(na):
     if na == 'N/A':
         return '0'
@@ -47,7 +47,14 @@ def exec():
         mydb.commit()
         print(mycursor.rowcount, f"record inserted. vales {val}")
 
-''
+def execday():
+    if isCorr(dados): ## verificando se os dados estão corretos
+        val = (dados[0], converComTD((natozero(dados[2]))), converComTD(natozero(dados[3])))
+        sql = """INSERT INTO fiib3daily (cod, cot, liqDiaria) VALUES (%s, %s, %s)""".encode('utf-8')
+        mycursor.execute(sql, val)
+        mydb.commit()
+        print(mycursor.rowcount, f"record inserted into fiib3daily. vales {val}".encode('utf-8'))
+
 mydb = mariadb.connect(
         host="localhost",
         user="root",
@@ -80,17 +87,31 @@ for tbody in soup.find('table', id='table-ranking').find('tbody'):
         result = mycursor.fetchall()
         result = result[0][0] ## tornando result em uma variavel
         if result == None:
-            result = '1970-01-01'
-        else:
-            result = str(result)
-        month_at = int(result[5:7])
-        year_at = int(result[0:4])
-        month_now = int(datetime.datetime.now().strftime('%m'))
-        year_now = int('20'+datetime.datetime.now().strftime("%y"))
+            result = datetime.datetime.strptime('1970-01-01', '%Y-%m-%d')
+        month_at = result.month
+        year_at = result.year
+        month_now = now.month
+        year_now = now.year
         if year_now == year_at and month_now > month_at: ## verificando se o mes atual não é o mesmo do mes da ultima atualização
             exec()      # função para executar a inserção no banco de dados
         elif month_at >= month_now and year_now != year_at:
             exec()      # função para executar a inserção no banco de dados
         else:
             print(f"{dados[0]} ja foi atualizado esse mes, portanto nenhuma alteração foi feita")
-
+        print('''\
+        Verificando se a cotação e liquidez diária já estão atualizadas no db fiib3daily
+                ''')
+        sql = f"SELECT MAX(ultAt) FROM fiib3daily WHERE cod = '{dados[0]}'"  ## buscando a ultima atualização no db
+        mycursor.execute(sql)
+        result = mycursor.fetchall()
+        result = result[0][0]  ## tornando result em uma variavel
+        if result == None:
+            result = datetime.datetime.strptime("1970-01-01", '%Y-%m-%d')
+        dif_at = now.day - result.date().day
+        today = now.weekday()
+        if dif_at > 0 and 0 < today < 6:
+            execday()  # função para executar a incerção no db daily
+            if today == 0 and dif_at >= 3:
+                execday()  # função para executar a incerção no db daily
+            if today == 6 and dif_at >= 1:
+                execday()  # função para executar a incerção no db daily
