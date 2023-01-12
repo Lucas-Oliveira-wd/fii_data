@@ -97,9 +97,9 @@ for tbody in soup.find('table', id='table-ranking').find('tbody'):
         elif month_at >= month_now and year_now != year_at:
             exec()      # função para executar a inserção no banco de dados
         else:
-            print(f"{dados[0]} ja foi atualizado esse mes, portanto nenhuma alteração foi feita")
+            print(f"\n\n{dados[0]} ja foi atualizado esse mes, portanto nenhuma alteração foi feita")
         print('''\
-        Verificando se a cotação e liquidez diária já estão atualizadas no db fiib3daily
+Verificando se a cotação e liquidez diária já estão atualizadas no db fiib3daily
                 ''')
         sql = f"SELECT MAX(ultAt) FROM fiib3daily WHERE cod = '{dados[0]}'"  ## buscando a ultima atualização no db
         mycursor.execute(sql)
@@ -115,3 +115,7 @@ for tbody in soup.find('table', id='table-ranking').find('tbody'):
                 execday()  # função para executar a incerção no db daily
             if today == 6 and dif_at >= 1:
                 execday()  # função para executar a incerção no db daily
+            else:
+                print("Cotação e liuidez já estão atualizadas!")
+        else:
+            print("Cotação e liuidez já estão atualizadas!")
