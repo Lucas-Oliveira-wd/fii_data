@@ -111,11 +111,9 @@ Verificando se a cotação e liquidez diária já estão atualizadas no db fiib3
         today = now.weekday()
         if dif_at > 0 and 0 < today < 6:
             execday()  # função para executar a incerção no db daily
-            if today == 0 and dif_at >= 3:
-                execday()  # função para executar a incerção no db daily
-            if today == 6 and dif_at >= 1:
-                execday()  # função para executar a incerção no db daily
-            else:
-                print("Cotação e liuidez já estão atualizadas!")
+        elif today == 0 and dif_at >= 3:
+            execday()  # função para executar a incerção no db daily
+        elif today == 6 and dif_at >= 1:
+            execday()  # função para executar a incerção no db daily
         else:
             print("Cotação e liuidez já estão atualizadas!")
