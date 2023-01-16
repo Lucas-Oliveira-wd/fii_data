@@ -8,5 +8,5 @@ de oportunidades de compra e venda ;e rankear os melhores baseados em critérios
 ## Lista de Símbolos
 1 - :up: Atualizacão;
 2 - :package: Nova funcionalidade;
-3 - :checkered_flag: releases;
+3 - :checkered_flag: release;
 4 - :lady_beetle: correcão de bugs
