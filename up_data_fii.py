@@ -107,9 +107,9 @@ Verificando se a cotação e liquidez diária já estão atualizadas no db fiib3
         result = result[0][0]  ## tornando result em uma variavel
         if result == None:
             result = datetime.datetime.strptime("1970-01-01", '%Y-%m-%d')
-        dif_at = now.day - result.date().day
+        dif_at = now.date() - result.date()
         today = now.weekday()
-        if dif_at > 0 and 0 < today < 6:
+        if dif_at.days > 0 and 0 < today < 6:
             execday()  # função para executar a incerção no db daily
         elif today == 0 and dif_at >= 3:
             execday()  # função para executar a incerção no db daily
