@@ -38,9 +38,9 @@ def converComTD(strin):          ## função para transformar string com virgula
 def exec():
     if isCorr(dados):  ## verificando se os dados estão corretos
         val = (dados[0], dados[1], converComTD(natozero(dados[2])), converComTD(natozero(dados[3])),
-               converComTD(natozero(dados[4])), converComTD(natozero(dados[16])),
-               converComTD(natozero(dados[17])), converComTD(natozero(dados[23])),
-               converComTD(natozero(dados[24])), converComTD(natozero(dados[25])))
+               converComTD(natozero(dados[5])), converComTD(natozero(dados[17])),
+               converComTD(natozero(dados[18])), converComTD(natozero(dados[24])),
+               converComTD(natozero(dados[25])), converComTD(natozero(dados[26])))
         sql = """INSERT INTO fiib3 (codigo, setor, preco, liqDiaria, dividendo, patLiq, vpa, vacFis, vacFin,
                 qtd) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
         mycursor.execute(sql, val)
@@ -70,13 +70,12 @@ content = driver.page_source
 soup = BeautifulSoup(content)
 #           Montando a lista de empresas                #
 empresas = []
-for a in soup.findAll('td', 'sorting_1'):
-    element = a.find('a')
-    if empresas.count(a.text) != True:  ## veridicando se o codiogo do fundo ja enta na lista
+for a in soup.findAll('td', attrs={'data-collum': 'collum-post_title'}): #loop na coluna dos títulos
+    element = a.find('a')  #texto dentro dos links
+    if empresas.count(a.text) != True:  ## veridicando se o codiogo do fundo ja está na lista
         empresas.append(a.text)
 
-
-for tbody in soup.find('table', id='table-ranking').find('tbody'):
+for tbody in soup.find('table').find('tbody'):
     dados = []
     for row in tbody:
         if hasattr(row, 'text') and row.text != '\n':
@@ -111,9 +110,9 @@ Verificando se a cotação e liquidez diária já estão atualizadas no db fiib3
         today = now.weekday()
         if dif_at.days > 0 and 0 < today < 6:
             execday()  # função para executar a incerção no db daily
-        elif today == 0 and dif_at >= 3:
+        elif today == 0 and dif_at.days >= 3:
             execday()  # função para executar a incerção no db daily
-        elif today == 6 and dif_at >= 1:
+        elif today == 6 and dif_at.days >= 1:
             execday()  # função para executar a incerção no db daily
         else:
             print("Cotação e liuidez já estão atualizadas!")

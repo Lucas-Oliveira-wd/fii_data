@@ -1,11 +1,13 @@
 import pandas as pd # Para evitar escrever pandas e trocar pela escrita apenas de pd para facilitar
 from pandas_datareader import data as web # Evita a escrita do data e troca pelo web
 import time
+import datetime
 import smtplib, ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import mariadb
 
-def verMaxDate(date,vals): ## função para retornar a date que ocorreu o valor minimo
+def verMaxDate(date,vals): ## função para retornar a date que ocorreu o valor maximo
     for i in range(len(vals)):
         if vals[i] == max(vals):
             return date[i]
@@ -17,6 +19,7 @@ one_day = 60*60*24
 interval = 3 ## intervalo de tempo em meses
 
 data_inicial = time.strftime('%m-%d-%y', time.localtime(time.time()-interval*30*one_day))
+data_inicial = datetime.datetime.strptime(data_inicial, '%m-%d-%y')  ##definindo a data inicial
 
 msg_aval_since = """\
 Procurando por uma janela de oportunidade de compra para os fundos da planilha 'fiis.xlsx'.
@@ -26,19 +29,34 @@ print(msg_aval_since.format(data_inicial))
 
 empresas_df = pd.read_excel("fiis.xlsx")
 
+#conectando com o banco de dados
+mydb = mariadb.connect(
+	host="localhost",
+	user="root",
+	password=None,
+	database="invest"
+)
+mycursor = mydb.cursor()
+
 for empresa in empresas_df['fiis']:
-    df = web.DataReader(f'{empresa}.SA', data_source='yahoo', start=data_inicial, end=data_final)
 
-    var = ((df["Adj Close"][len(df["Adj Close"])-1]) - max(df["Adj Close"]))/max(df["Adj Close"])
+    #montando a lista para conter os dados dos fiis
+    sql = f"SELECT cot, ultInsert FROM fiib3daily WHERE cod = '{empresa}' ORDER BY ultInsert" ## buscando o
+					# ultimo balanço das empresas no db
+    mycursor.execute(sql)
+    result = mycursor.fetchall()
+    cot_dados = []  # para conter os dados das cotações
+
+    for r in result:
+        if r[1] >= data_inicial: #filtrando as datas acima da inicial
+            cot_dados.append(r)
+
+    df = pd.DataFrame(cot_dados, columns=('cotacao', 'data'))  # defininco o data frame
+
+    if len(df['cotacao']) > 1:   #verificando se tem pelo menos mais de 2 valores para a cotação
+        var = ((df['cotacao'].iloc[len(df['cotacao']) - 1]) - max(df['cotacao']))/max(df['cotacao'])
+
     wind = -0.1 # valor para janela de oportunidade
-
-    dates = [] ## para conter as datas
-    vals = []  ## para conter os valores
-
-    for i in df.index:
-        dates.append(i)
-    for i in df["Adj Close"]:
-        vals.append(i)
 
     if var < wind:
 
@@ -76,8 +94,8 @@ for empresa in empresas_df['fiis']:
                     <div style='background-color: rgb(39, 163, 39); max-width: 150px; padding: 10px 50px;
                     margin: 30px auto; font-size: 25px; border-radius: 60px; color: rgb(0, 0, 0);'>
                     <b>{0}</b> </div>
-                <p> O fundo estava cotada no valor de <b> R$ {1} </b> no dia <b> {2}</b>,</p>
-                <p> hoje está cotada no valor de <b>R$ {3}</b>,</p>
+                <p> O fundo estava cotado no valor de <b> R$ {1} </b> no dia <b> {2}</b>,</p>
+                <p> hoje está cotado no valor de <b>R$ {3}</b>,</p>
                 <p style=' border-bottom: 4px solid #666; color: #fff; padding: 10px 0 150px;
                     text-shadow: 3px 2px 4px #00000099;'>
                     <b>Uma queda de {4} %</b></p>
@@ -85,8 +103,8 @@ for empresa in empresas_df['fiis']:
         </html>
         """
 
-        html = msg.format(empresa, round(max(df["Adj Close"]), 2), str(verMaxDate(dates, vals))[0:10],
-                          round(df["Adj Close"][len(df["Adj Close"])-1], 2), round(-var*100,2))
+        html = msg.format(empresa, round(max(df["cotacao"]), 2), str(verMaxDate(df['data'], df['cotacao']))[0:10],
+                          round(df["cotacao"].iloc[len(df["cotacao"])-1], 2), round(-var*100,2))
 
         # Turn these into plain/html MIMEText objects
         part1 = MIMEText(text, "plain")
