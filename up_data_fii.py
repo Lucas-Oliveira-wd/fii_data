@@ -34,6 +34,11 @@ def converComTD(strin):          ## função para transformar string com virgula
     conv = float(wtt_rs)
     return conv
 
+def convDenom(num,denom):
+    if denom == 0:
+        return 0
+    else:
+        return num/denom
 
 def exec():
     if isCorr(dados):  ## verificando se os dados estão corretos
@@ -49,8 +54,10 @@ def exec():
 
 def execday():
     if isCorr(dados): ## verificando se os dados estão corretos
-        val = (dados[0], converComTD((natozero(dados[2]))), converComTD(natozero(dados[3])))
-        sql = """INSERT INTO fiib3daily (cod, cot, liqDiaria) VALUES (%s, %s, %s)""".encode('utf-8')
+        val = (dados[0], converComTD((natozero(dados[2]))),
+               convDenom(converComTD((natozero(dados[17]))),converComTD(natozero(dados[18]))),
+               converComTD(natozero(dados[3])))
+        sql = """INSERT INTO fiib3daily (cod, cot, nCotas, liqDiaria) VALUES (%s, %s, %s, %s)""".encode('utf-8')
         mycursor.execute(sql, val)
         mydb.commit()
         print(mycursor.rowcount, f"record inserted into fiib3daily. vales {val}".encode('utf-8'))
@@ -100,7 +107,7 @@ for tbody in soup.find('table').find('tbody'):
         print('''\
 Verificando se a cotação e liquidez diária já estão atualizadas no db fiib3daily
                 ''')
-        sql = f"SELECT MAX(ultAt) FROM fiib3daily WHERE cod = '{dados[0]}'"  ## buscando a ultima atualização no db
+        sql = f"SELECT MAX(ultInsert) FROM fiib3daily WHERE cod = '{dados[0]}'"  ## buscando a ultima inserção no db
         mycursor.execute(sql)
         result = mycursor.fetchall()
         result = result[0][0]  ## tornando result em uma variavel
