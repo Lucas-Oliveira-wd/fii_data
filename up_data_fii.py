@@ -73,9 +73,8 @@ try:
         if isCorr(dados):  ## verificando se os dados estão corretos
             val = (dados[0], dados[1], converComTD(natozero(dados[2])), converComTD(natozero(dados[3])),
                    converComTD(natozero(dados[5])), converComTD(natozero(dados[17])),
-                   converComTD(natozero(dados[18])), converComTD(natozero(dados[24])),
-                   converComTD(natozero(dados[25])), converComTD(natozero(dados[26])))
-            sql = """INSERT INTO fiib3 (codigo, setor, preco, liqDiaria, dividendo, patLiq, vpa, vacFis, vacFin,
+                   converComTD(natozero(dados[18])), converComTD(natozero(dados[24])))
+            sql = """INSERT INTO fiib3 (codigo, setor, preco, liqDiaria, dividendo, patLiq, vpa,
                     qtd) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
             mycursor.execute(sql, val)
             mydb.commit()
