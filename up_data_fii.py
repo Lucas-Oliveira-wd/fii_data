@@ -69,6 +69,25 @@ try:
         else:
             return num/denom
 
+    def findNCotas(cod):
+        driver = webdriver.Chrome("C:\Program Files\Google\Chrome\Application\chromedriver-win64\chromedriver.exe")
+
+        driver.get(f"https://www.fundsexplorer.com.br/funds/{cod}")
+        content = driver.page_source
+        soup = BeautifulSoup(content)
+        # Encontre o parágrafo com o texto "Cotas emitidas"
+        paragrafo_cotas_emitidas = soup.find('p', text='Cotas emitidas')
+
+        # Acesse o próximo parágrafo (o que contém o número)
+        if paragrafo_cotas_emitidas:
+            numero_cotas_emitidas = paragrafo_cotas_emitidas.find_next('p')
+            if numero_cotas_emitidas:
+                numero = numero_cotas_emitidas.text
+                return converComTD(numero)
+            else:
+                return ("Número não encontrado")
+        else:
+            return ("Parágrafo 'Cotas emitidas' não encontrado")
     def exec():
         if isCorr(dados):  ## verificando se os dados estão corretos
             val = (dados[0], dados[1], converComTD(natozero(dados[2])), converComTD(natozero(dados[3])),
@@ -83,7 +102,7 @@ try:
     def execday():
         if isCorr(dados): ## verificando se os dados estão corretos
             val = (dados[0], converComTD((natozero(dados[2]))),
-                   convDenom(converComTD((natozero(dados[17]))),converComTD(natozero(dados[18]))),
+                   findNCotas(dados[0]),
                    converComTD(natozero(dados[3])))
             sql = """INSERT INTO fiib3daily (cod, cot, nCotas, liqDiaria) VALUES (%s, %s, %s, %s)""".encode('utf-8')
             mycursor.execute(sql, val)
