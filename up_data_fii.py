@@ -152,8 +152,8 @@ try:
                 exec()      # função para executar a inserção no banco de dados
             else:
                 print(f"\n\n{dados[0]} ja foi atualizado esse mes, portanto nenhuma alteração foi feita")
-            print('''\
-    Verificando se a cotação e liquidez diária já estão atualizadas no db fiib3daily
+            print('''\n
+Verificando se a cotação e liquidez diária já estão atualizadas no db fiib3daily
                     ''')
             sql = f"SELECT MAX(ultInsert) FROM fiib3daily WHERE cod = '{dados[0]}'"  ## buscando a ultima inserção no db
             mycursor.execute(sql)
