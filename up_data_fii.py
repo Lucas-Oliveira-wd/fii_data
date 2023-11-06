@@ -167,10 +167,10 @@ try:
                 execday()  # função para executar a incerção no db daily
             elif today == 0 and dif_at.days >= 3:
                 execday()  # função para executar a incerção no db daily
-            elif today == 6 and dif_at.days >= 1:
+            elif today == 6 and dif_at.days >= 2:
                 execday()  # função para executar a incerção no db daily
             else:
-                print("Cotação e liuidez já estão atualizadas!")
+                print("Cotação e liquidez já estão atualizadas!")
 except Exception as e: #enviar email em caso de error
     mensagem_erro = f'Erro na execução do script "up_data_fii.py": {str(e)}'
     enviar_email_erro(mensagem_erro)
