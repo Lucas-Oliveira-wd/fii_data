@@ -1,6 +1,7 @@
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import traceback
 
 # Função para enviar e-mails em caso de erro
 def enviar_email_erro(mensagem):
@@ -13,8 +14,7 @@ def enviar_email_erro(mensagem):
     msg['To'] = para_email
     msg['Subject'] = 'Erro na execução do script "up_data_fii.py"'
 
-    corpo_mensagem = mensagem
-    msg.attach(MIMEText(corpo_mensagem, 'plain'))
+    msg.attach(MIMEText(mensagem, 'plain'))
 
     try:
         server = smtplib.SMTP('smtp.gmail.com', 587)
@@ -22,7 +22,6 @@ def enviar_email_erro(mensagem):
         server.login(de_email, senha)
         server.sendmail(de_email, para_email, msg.as_string())
         server.quit()
-        print('E-mail de erro enviado com sucesso!')
     except Exception as e:
         print(f'Erro ao enviar e-mail de erro: {str(e)}')
 
@@ -34,6 +33,8 @@ try:
     import pandas as pd # Para evitar escrever pandas e trocar pela escrita apenas de pd para facilitar
     from pandas_datareader import data as web # Evita a escrita do data e troca pelo web
     from selenium import webdriver
+    from selenium.webdriver.chrome.service import Service
+    from selenium.webdriver.chrome.options import Options
     from bs4 import BeautifulSoup
 
     one_day = 60*60*24
@@ -70,24 +71,24 @@ try:
             return num/denom
 
     def findNCotas(cod):
-        driver = webdriver.Chrome("C:\Program Files\Google\Chrome\Application\chromedriver-win64\chromedriver.exe")
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
 
-        driver.get(f"https://www.fundsexplorer.com.br/funds/{cod}")
-        content = driver.page_source
-        soup = BeautifulSoup(content)
-        # Encontre o parágrafo com o texto "Cotas emitidas"
-        paragrafo_cotas_emitidas = soup.find('p', text='Cotas emitidas')
+        service = Service(
+            executable_path="C:/Program Files/Google/Chrome/Application/chromedriver-win64/chromedriver.exe")
+        driver = webdriver.Chrome(service=service, options=chrome_options)
 
-        # Acesse o próximo parágrafo (o que contém o número)
-        if paragrafo_cotas_emitidas:
-            numero_cotas_emitidas = paragrafo_cotas_emitidas.find_next('p')
-            if numero_cotas_emitidas:
-                numero = numero_cotas_emitidas.text
-                return converComTD(numero)
-            else:
-                return ("Número não encontrado")
-        else:
-            return ("Parágrafo 'Cotas emitidas' não encontrado")
+        try:
+            driver.get(f"https://www.fundsexplorer.com.br/funds/{cod}")
+            soup = BeautifulSoup(driver.page_source, 'html.parser')
+            p = soup.find('p', string='Cotas emitidas')
+            return converComTD(p.find_next('p').text) if p else 0
+        finally:
+            driver.quit()
+
     def exec():
         if isCorr(dados):  ## verificando se os dados estão corretos
             val = (dados[0], dados[1], converComTD(natozero(dados[2])), converComTD(natozero(dados[3])),
@@ -104,10 +105,10 @@ try:
             val = (dados[0], converComTD((natozero(dados[2]))),
                    findNCotas(dados[0]),
                    converComTD(natozero(dados[3])))
-            sql = """INSERT INTO fiib3daily (cod, cot, nCotas, liqDiaria) VALUES (%s, %s, %s, %s)""".encode('utf-8')
+            sql = """INSERT INTO fiib3daily (cod, cot, nCotas, liqDiaria) VALUES (%s, %s, %s, %s)"""
             mycursor.execute(sql, val)
             mydb.commit()
-            print(mycursor.rowcount, f"record inserted into fiib3daily. vales {val}".encode('utf-8'))
+            print(mycursor.rowcount, f"record inserted into fiib3daily. vales {val}")
 
     mydb = mariadb.connect(
             host="localhost",
@@ -117,11 +118,21 @@ try:
           )
     mycursor = mydb.cursor()
 
-    driver = webdriver.Chrome("C:\Program Files\Google\Chrome\Application\chromedriver-win64\chromedriver.exe")
+    # Iniciar Selenium
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    service = Service(executable_path=r"C:/Program Files/Google/Chrome/Application/chromedriver-win64/chromedriver.exe")
+    driver = webdriver.Chrome(service=service, options=chrome_options)
 
-    driver.get("https://www.fundsexplorer.com.br/ranking")
-    content = driver.page_source
-    soup = BeautifulSoup(content)
+    try:
+        driver.get("https://www.fundsexplorer.com.br/ranking")
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+    finally:
+        driver.quit()
+
     #           Montando a lista de empresas                #
     empresas = []
     for a in soup.findAll('td', attrs={'data-collum': 'collum-post_title'}): #loop na coluna dos títulos
@@ -171,6 +182,8 @@ Verificando se a cotação e liquidez diária já estão atualizadas no db fiib3
                 execday()  # função para executar a incerção no db daily
             else:
                 print("Cotação e liquidez já estão atualizadas!")
+
+
 except Exception as e: #enviar email em caso de error
-    mensagem_erro = f'Erro na execução do script "up_data_fii.py": {str(e)}'
+    mensagem_erro = f'Erro na execução do script "up_data_fii.py":\n\n{traceback.format_exc()}'
     enviar_email_erro(mensagem_erro)
