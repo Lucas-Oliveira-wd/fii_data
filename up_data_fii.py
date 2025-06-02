@@ -113,7 +113,7 @@ try:
     mydb = mariadb.connect(
             host="localhost",
             user="root",
-            password=None,
+            password= None,
             database="invest"
           )
     mycursor = mydb.cursor()
