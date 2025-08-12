@@ -39,11 +39,16 @@ try:
 
     one_day = 60*60*24
     now = datetime.datetime.now()
+
+
     def natozero(na):
-        if na == 'N/A':
+        # Converte 'N/A' ou uma string vazia para '0'
+        if na == 'N/A' or na == '':
             return '0'
         else:
             return na
+
+
     def isCorr (dic):   ## função para verificar se os dados estão corretos
         incorr = []
         for i in dic:
@@ -70,6 +75,7 @@ try:
         else:
             return num/denom
 
+
     def findNCotas(cod):
         chrome_options = Options()
         chrome_options.add_argument("--headless")
@@ -84,8 +90,31 @@ try:
         try:
             driver.get(f"https://www.fundsexplorer.com.br/funds/{cod}")
             soup = BeautifulSoup(driver.page_source, 'html.parser')
-            p = soup.find('p', string='Cotas emitidas')
-            return converComTD(p.find_next('p').text) if p else 0
+
+            # --- VERSÃO MAIS PRECISA USANDO A ESTRUTURA HTML FORNECIDA ---
+
+            # 1. Encontra a tag <p> com o texto exato "Cotas emitidas"
+            label_p = soup.find('p', string='Cotas emitidas')
+
+            # 2. Se a tag do rótulo for encontrada...
+            if label_p:
+                # 3. ...procura pela próxima tag "irmã" que seja um <p>.
+                # Esta deve ser a tag que contém o valor.
+                value_p = label_p.find_next_sibling('p')
+
+                # 4. Verifica se a tag <p> do valor e a tag <b> dentro dela existem
+                if value_p and value_p.b:
+                    # 5. Extrai o texto da tag <b>, converte e retorna o número
+                    return converComTD(value_p.b.text)
+
+            # Se a estrutura esperada não for encontrada, imprime um alerta e retorna 0
+            print(
+                f"Alerta: Estrutura HTML para 'Cotas emitidas' do fundo {cod} não foi encontrada como esperado. Retornando 0.")
+            return 0
+
+        except Exception as e:
+            print(f"Ocorreu um erro ao buscar o número de cotas para {cod}: {e}")
+            return 0
         finally:
             driver.quit()
 
@@ -95,7 +124,7 @@ try:
                    converComTD(natozero(dados[5])), converComTD(natozero(dados[17])),
                    converComTD(natozero(dados[18])), converComTD(natozero(dados[24])))
             sql = """INSERT INTO fiib3 (codigo, setor, preco, liqDiaria, dividendo, patLiq, vpa,
-                    qtd) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+                    qtd) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
             mycursor.execute(sql, val)
             mydb.commit()
             print(mycursor.rowcount, f"record inserted. vales {val}")
